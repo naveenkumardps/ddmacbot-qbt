@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+pydantic
+python-dotenv
+requests
+sqlalchemy
+pymysql
+jinja2
+httpx
+pydantic-settings
+pymongo
+sqlalchemy
+psycopg2-binary
+pydantic-settings
+supabase
+motor
