@@ -1,7 +1,7 @@
 from fastapi import FastAPI,Request
 from fastapi.responses import JSONResponse
 from config.database import *
-import Controller.AuthController, Controller.CustomerController, Controller.CustomeFieldController, Controller.TimesheetController, Controller.UserController
+import Controller.AuthController, Controller.CustomerController, Controller.CustomeFieldController, Controller.TimesheetController, Controller.UserController,Controller.TaskController
 
 
 from config.config import *
@@ -14,6 +14,7 @@ app.include_router(Controller.CustomerController.route)
 app.include_router(Controller.CustomeFieldController.route)
 app.include_router(Controller.TimesheetController.route)
 app.include_router(Controller.UserController.route)
+app.include_router(Controller.TaskController.route)
 
 
 

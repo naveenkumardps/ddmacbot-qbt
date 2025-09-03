@@ -2,21 +2,21 @@ from fastapi import APIRouter, Query,Request
 import requests
 from config.config import *
 from config.database import *
-from Models.CustomFieldModel import CustomFieldModel
+from Models.CustomFieldModel import CustomFieldModel,CustomFieldItemsModel
 from typing import Optional
+import json
 
 
 route = APIRouter(prefix="/customfield", tags=["CustomField"])
 
-
+headers = {
+        "Authorization": f"Bearer {BEARERTOKEN}",
+    }
 
 @route.get("/")
 async def getCustomfield():
     url = QBTBASEURL + "/customfields"
     payload = ""
-    headers = {
-        "Authorization": f"Bearer {BEARERTOKEN}",
-    }
 
     response = requests.request("GET", url, data=payload, headers=headers)
 
@@ -82,11 +82,45 @@ async def customFielditems(
     }
 
     url = QBTBASEURL + "/customfielditems"
-    headers = {
-        "Authorization": f"Bearer {BEARERTOKEN}",
-    }
+   
 
     response = requests.get(url, headers=headers, params=querystring)
 
     return response.json()
+
+
+
+@route.post("/add-custom-field")
+async def AddCustomField(request:CustomFieldModel):
+
+    # payload = request
+    payload = json.dumps({
+        "data": [
+            
+                request.dict()
+            
+        ]
+    })
+    url = QBTBASEURL + "/customfields"
+    
+    response = requests.post( url, data=payload, headers=headers)
+    
+    return response.text
+
+@route.post("/add-custom-field-item")
+async def AddCustomFieldItem(request:CustomFieldItemsModel):
+
+    # payload = request
+    payload = json.dumps({
+        "data": [
+            
+                request.dict()
+            
+        ]
+    })
+    url = QBTBASEURL + "/customfielditems"
+    
+    response = requests.post( url, data=payload, headers=headers)
+    
+    return response.text
 
