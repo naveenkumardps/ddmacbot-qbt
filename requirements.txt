@@ -17,3 +17,4 @@ motor
 pandas
 openpyxl
 typing
+python-multipart
