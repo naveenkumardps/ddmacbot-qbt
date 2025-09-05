@@ -1,38 +1,34 @@
-from fastapi import APIRouter, Query,Request
+from fastapi import APIRouter, Query, Request
 import requests
 from config.config import *
 from config.database import *
 from Models.CustomerModel import CustomerModel
 
 route = APIRouter(prefix="/user", tags=["User"])
-url = QBTBASEURL 
+url = QBTBASEURL
 headers = {"Authorization": f"Bearer {BEARERTOKEN}"}
 
 
 @route.get("/")
-async def getUser(page: int = 1,count=0):
- 
-    return syncUser(page,count)
+async def getUser(page: int = 1, count=0):
+
+    return syncUser(page, count)
 
 
-def syncUser(page,count):
+def syncUser(page, count):
     payload = ""
-    querystring = {
-        "page":page
-    }
+    querystring = {"page": page}
     user_response = requests.get(
-        f"{url}/users",
-        headers=headers,
-        data=payload,
-        params=querystring
+        f"{url}/users", headers=headers, data=payload, params=querystring
     )
     data = user_response.json()
 
-    users = data['results']['users']
+    users = data["results"]["users"]
 
     # Insert each user into the database
     for user_id, user_info in users.items():
-        count +=1
+        count += 1
+
         def sanitize_date(date_str):
             if date_str in ("0000-00-00", "0000-00-00 00:00:00", "", None):
                 return None
@@ -72,7 +68,7 @@ def syncUser(page,count):
             "customfields": user_info.get("customfields"),
         }
         supabase_client.table("users").upsert(customer).execute()
-    if data['more']:
+    if data["more"]:
         page += 1
         return syncUser(page, count)
     return {"count": count}
