@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Query,Request
+from fastapi import APIRouter, Query, Request
 import requests
 from config.config import *
 from config.database import *
-from Models.CustomFieldModel import CustomFieldModel,CustomFieldItemsModel
+from Models.CustomFieldModel import CustomFieldModel, CustomFieldItemsModel
 from typing import Optional
 import json
 
@@ -10,8 +10,9 @@ import json
 route = APIRouter(prefix="/customfield", tags=["CustomField"])
 
 headers = {
-        "Authorization": f"Bearer {BEARERTOKEN}",
-    }
+    "Authorization": f"Bearer {BEARERTOKEN}",
+}
+
 
 @route.get("/")
 async def getCustomfield():
@@ -20,11 +21,10 @@ async def getCustomfield():
 
     response = requests.request("GET", url, data=payload, headers=headers)
 
-
     if response.status_code == 200:
-        data = response.json()['results']['customfields']
+        data = response.json()["results"]["customfields"]
         # Example: insert each custom field into the database using upsert structure
-        for c,field in data.items():
+        for c, field in data.items():
             customfield_data = {
                 "id": field.get("id"),
                 "active": field.get("active", False),
@@ -47,17 +47,18 @@ async def getCustomfield():
             # Fetch custom field items for each custom field and insert into "custom_field_items" table
             item_querystring = {
                 "customfield_id": field.get("id"),
-              
             }
             item_url = QBTBASEURL + "/customfielditems"
             item_headers = {
                 "Authorization": f"Bearer {BEARERTOKEN}",
             }
-            item_response = requests.get(item_url, headers=item_headers, params=item_querystring)
+            item_response = requests.get(
+                item_url, headers=item_headers, params=item_querystring
+            )
 
             if item_response.status_code == 200:
-                items_data = item_response.json()['results']['customfielditems']
-                for t,item in items_data.items():
+                items_data = item_response.json()["results"]["customfielditems"]
+                for t, item in items_data.items():
                     itemdata = {
                         "id": item.get("id"),
                         "customfield_id": item.get("customfield_id"),
@@ -67,9 +68,12 @@ async def getCustomfield():
                         "last_modified": item.get("last_modified"),
                         "required_customfields": item.get("required_customfields", []),
                     }
-                    supabase_client.table("custom_field_options").upsert(itemdata).execute()
+                    supabase_client.table("custom_field_options").upsert(
+                        itemdata
+                    ).execute()
 
     return response.text
+
 
 @route.get("/custom-field-items")
 async def customFielditems(
@@ -77,50 +81,37 @@ async def customFielditems(
 ):
     # Build dict dynamically: only include non-None values
     querystring = {
-        k: v for k, v in locals().items()
+        k: v
+        for k, v in locals().items()
         if v is not None and k not in ["request"]  # filter out None
     }
 
     url = QBTBASEURL + "/customfielditems"
-   
 
     response = requests.get(url, headers=headers, params=querystring)
 
     return response.json()
 
 
-
 @route.post("/add-custom-field")
-async def AddCustomField(request:CustomFieldModel):
+async def AddCustomField(request: CustomFieldModel):
 
     # payload = request
-    payload = json.dumps({
-        "data": [
-            
-                request.dict()
-            
-        ]
-    })
+    payload = json.dumps({"data": [request.dict()]})
     url = QBTBASEURL + "/customfields"
-    
-    response = requests.post( url, data=payload, headers=headers)
-    
+
+    response = requests.post(url, data=payload, headers=headers)
+
     return response.text
+
 
 @route.post("/add-custom-field-item")
-async def AddCustomFieldItem(request:CustomFieldItemsModel):
+async def AddCustomFieldItem(request: CustomFieldItemsModel):
 
     # payload = request
-    payload = json.dumps({
-        "data": [
-            
-                request.dict()
-            
-        ]
-    })
+    payload = json.dumps({"data": [request.dict()]})
     url = QBTBASEURL + "/customfielditems"
-    
-    response = requests.post( url, data=payload, headers=headers)
-    
-    return response.text
 
+    response = requests.post(url, data=payload, headers=headers)
+
+    return response.text
