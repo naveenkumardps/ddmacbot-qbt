@@ -2,12 +2,32 @@ from fastapi import FastAPI, Request, Depends, HTTPException, Security
 from fastapi.responses import JSONResponse
 from config.database import *
 import Controller.AuthController, Controller.CustomerController, Controller.CustomeFieldController, Controller.TimesheetController, Controller.UserController, Controller.TaskController
+
+from Controller.UserController import *
+from Controller.CustomerController import *
+from Controller.CustomeFieldController import *
+from Controller.TimesheetController import *
+from Controller.TaskController import *
+from Controller.AuthController import *
 from fastapi.security.api_key import APIKeyHeader
 from starlette.status import HTTP_403_FORBIDDEN
 from fastapi.openapi.utils import get_openapi
-
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 from config.config import *
 import requests
+import datetime
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("app.log"),   # Save to file
+        logging.StreamHandler()           # Show in console
+    ]
+)
 
 app = FastAPI(title=APPNAME)
 
@@ -66,6 +86,21 @@ app.include_router(
     Controller.TaskController.route, dependencies=[Depends(verify_credentials)]
 )
 
+# Your task function
+def daily_task():
+    print("Running daily task at 5 PM:", datetime.datetime.now())
+
+# Start scheduler when app starts
+@app.on_event("startup")
+def start_scheduler():
+    scheduler = BackgroundScheduler()
+    # Run daily at 5 PM
+    scheduler.add_job(getUser, CronTrigger(hour=16, minute=0))
+    scheduler.add_job(getCustomer, CronTrigger(hour=16, minute=10))
+    scheduler.add_job(getCustomfield, CronTrigger(hour=16, minute=15))
+    scheduler.add_job(getTimesheetlog, CronTrigger(hour=17, minute=0))
+    scheduler.add_job(syncFiles, CronTrigger(hour=17, minute=5))
+    scheduler.start()
 
 @app.get("/")
 async def root():
