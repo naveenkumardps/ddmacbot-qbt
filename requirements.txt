@@ -18,3 +18,4 @@ pandas
 openpyxl
 typing
 python-multipart
+apscheduler

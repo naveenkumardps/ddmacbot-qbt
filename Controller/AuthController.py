@@ -54,7 +54,7 @@ async def refreshToken():
             "grant_type": "refresh_token",
             "client_id": "MYAPPCLIENTID",
             "client_secret": "MYAPPSECRET",
-            "refresh_token": "0ed645dbcfaca681e37df26df6f39d273330e7a0",
+            "refresh_token": refresh_token,
         }
 
         payload = (

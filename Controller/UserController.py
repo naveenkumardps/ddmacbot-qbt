@@ -10,7 +10,7 @@ headers = {"Authorization": f"Bearer {BEARERTOKEN}"}
 
 
 @route.get("/")
-async def getUser(page: int = 1, count=0):
+async def getUser(page: int = 1, count:int=0):
 
     return syncUser(page, count)
 
@@ -23,7 +23,9 @@ def syncUser(page, count):
     )
     data = user_response.json()
 
-    users = data["results"]["users"]
+
+
+    users = data['results']['users']
 
     # Insert each user into the database
     for user_id, user_info in users.items():
@@ -68,7 +70,7 @@ def syncUser(page, count):
             "customfields": user_info.get("customfields"),
         }
         supabase_client.table("users").upsert(customer).execute()
-    if data["more"]:
+    if data['more']:
         page += 1
         return syncUser(page, count)
     return {"count": count}
