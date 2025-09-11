@@ -10,7 +10,7 @@ url = QBTBASEURL + "/jobcodes"
 
 
 @route.get("/")
-async def getCustomer(page: int = 1, count=0):
+async def getCustomer(page: int = 1, count : int =0):
 
     return syncCustomer(page, count)
 
