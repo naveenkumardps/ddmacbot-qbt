@@ -50,8 +50,8 @@ CREATE TABLE timesheets (
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     jobcode_id BIGINT NOT NULL REFERENCES jobcodes(id) ON DELETE CASCADE,
 
-    start TIMESTAMP WITH TIME ZONE,
-    "end" TIMESTAMP WITH TIME ZONE,
+    start TEXT,
+    "end" TEXT,
     duration BIGINT,
     "date" DATE,
     tz INTEGER,
@@ -59,7 +59,7 @@ CREATE TABLE timesheets (
     type TEXT,
     location TEXT,
     on_the_clock BOOLEAN,
-    locked BOOLEAN,
+    locked INTEGER,
     notes TEXT,
 
     customfields JSONB,
