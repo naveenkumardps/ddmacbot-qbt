@@ -16,6 +16,8 @@ headers = {
 
 @route.get("/")
 async def getCustomfield():
+
+    return headers
     url = QBTBASEURL + "/customfields"
     payload = ""
 
