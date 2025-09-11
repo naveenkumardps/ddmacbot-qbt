@@ -36,6 +36,7 @@ def syncTimesheet(page, count):
         "customfields": [],
         "timesheet_customfields": [],
     }
+    
 
      # Insert each user into the database
     for user_id, user_info in users.items():
@@ -123,6 +124,9 @@ def syncTimesheet(page, count):
                 supabase_client.table("jobcode_required_customfields").upsert(
                     jobcode_customfield
                 ).execute()
+
+
+        
 
     # 2. Upsert timesheets
     for ts_id, ts in timesheets.items():
@@ -218,7 +222,7 @@ def syncTimesheet(page, count):
                         itemdata
                     ).execute()
 
-    if data.json().get("more"):
+    if data.get("more"):
         page += 1
         return syncTimesheet(page, count)
 
