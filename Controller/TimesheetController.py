@@ -26,7 +26,7 @@ def syncTimesheet(page, count):
             ts_resp = requests.get(
                 f"{url}/timesheets",
                 headers=headers,
-                params={"start_date": "2020-01-01", "page": page},
+                params={"start_date": "2020-10-1", "page": page},
             )
             data = ts_resp.json()
 
@@ -85,14 +85,43 @@ def process_page(data):
 
     # ---- Users ----
     users_list = []
+    def sanitize_date(date_str):
+        if date_str in ("0000-00-00", "0000-00-00 00:00:00", "", None):
+            return None
+        return date_str
     for _, user_info in users.items():
         users_list.append({
             "id": user_info.get("id"),
             "first_name": user_info.get("first_name"),
             "last_name": user_info.get("last_name"),
+            "group_id": user_info.get("group_id"),
             "active": user_info.get("active"),
+            "employee_number": user_info.get("employee_number"),
+            "salaried": user_info.get("salaried"),
+            "exempt": user_info.get("exempt"),
+            "username": user_info.get("username"),
             "email": user_info.get("email"),
-            # ... (trim down fields or keep all if your schema allows)
+            "email_verified": user_info.get("email_verified"),
+            "payroll_id": user_info.get("payroll_id"),
+            "mobile_number": user_info.get("mobile_number"),
+            "hire_date": sanitize_date(user_info.get("hire_date")),
+            "term_date": sanitize_date(user_info.get("term_date")),
+            "last_modified": sanitize_date(user_info.get("last_modified")),
+            "last_active": sanitize_date(user_info.get("last_active")),
+            "created": sanitize_date(user_info.get("created")),
+            "client_url": user_info.get("client_url"),
+            "company_name": user_info.get("company_name"),
+            "profile_image_url": user_info.get("profile_image_url"),
+            "display_name": user_info.get("display_name"),
+            "pto_balances": user_info.get("pto_balances"),
+            "submitted_to": user_info.get("submitted_to"),
+            "approved_to": user_info.get("approved_to"),
+            "manager_of_group_ids": user_info.get("manager_of_group_ids"),
+            "require_password_change": user_info.get("require_password_change"),
+            "pay_rate": user_info.get("pay_rate"),
+            "pay_interval": user_info.get("pay_interval"),
+            "permissions": user_info.get("permissions"),
+            "customfields": user_info.get("customfields"),
         })
     if users_list:
         supabase_client.table("users").upsert(users_list).execute()
@@ -101,27 +130,80 @@ def process_page(data):
     jobcodes_list = []
     for _, jc in jobcodes.items():
         jobcodes_list.append({
-            "id": jc.get("id"),
-            "name": jc.get("name"),
+             "id": jc.get("id"),
+            "parent_id": (
+                None if jc.get("parent_id") == 0 else jc.get("parent_id")
+            ),
+            "assigned_to_all": jc.get("assigned_to_all"),
+            "billable": jc.get("billable"),
             "active": jc.get("active"),
-            "last_modified": jc.get("last_modified"),
+            "type": jc.get("type"),
+            "has_children": jc.get("has_children"),
+            "billable_rate": jc.get("billable_rate"),
+            "short_code": jc.get("short_code"),
+            "name": jc.get("name"),
+            "last_modified": sanitize_date(jc.get("last_modified")),
+            "created": sanitize_date(jc.get("created")),
+            "filtered_customfielditems": jc.get("filtered_customfielditems"),
+            "connect_with_quickbooks": jc.get("connect_with_quickbooks"),
         })
     if jobcodes_list:
         supabase_client.table("jobcodes").upsert(jobcodes_list).execute()
 
-    # ---- Custom Fields ----
-    custom_fields_list = []
-    for _, field in customfields.items():
-        custom_fields_list.append({
-            "id": field.get("id"),
-            "name": field.get("name"),
-            "active": field.get("active", False),
-        })
-    if custom_fields_list:
-        supabase_client.table("custom_fields").upsert(custom_fields_list).execute()
+    customfield_data = []
+    customfield_item_data = []
+    for c, field in customfields.items():
+            customfield_data.append({
+                "id": field.get("id"),
+                "active": field.get("active", False),
+                "required": field.get("required", False),
+                "applies_to": field.get("applies_to"),
+                "type": field.get("type"),
+                "short_code": field.get("short_code"),
+                "regex_filter": field.get("regex_filter"),
+                "name": field.get("name"),
+                "last_modified": field.get("last_modified"),
+                "created": field.get("created"),
+                "ui_preference": field.get("ui_preference"),
+                "required_customfields": field.get("required_customfields", []),
+                "show_to_all": field.get("show_to_all", False),
+            })
 
+            # Upsert the custom field using supabase_client
+            supabase_client.table("custom_fields").upsert(customfield_data).execute()
+
+            # Fetch custom field items for each custom field and insert into "custom_field_items" table
+            item_querystring = {
+                "customfield_id": field.get("id"),
+            }
+            item_url = QBTBASEURL + "/customfielditems"
+            item_headers = {
+                "Authorization": f"Bearer {BEARERTOKEN}",
+            }
+            item_response = requests.get(
+                item_url, headers=item_headers, params=item_querystring
+            )
+
+            if item_response.status_code == 200:
+                items_data = item_response.json()["results"]["customfielditems"]
+                for t, item in items_data.items():
+                    customfield_item_data.append({
+                        "id": item.get("id"),
+                        "customfield_id": item.get("customfield_id"),
+                        "active": item.get("active", False),
+                        "short_code": item_headers.get("short_code", ""),
+                        "name": item.get("name"),
+                        "last_modified": item.get("last_modified"),
+                        "required_customfields": item.get("required_customfields", []),
+                    })
+    if customfield_data:
+        supabase_client.table("custom_fields").upsert(customfield_data).execute()
+    if customfield_item_data:
+        supabase_client.table("custom_field_options").upsert(customfield_item_data).execute()
     # ---- Timesheets ----
     timesheets_list = []
+    timesheet_customfields_list = []
+    timesheet_files_list = []
     for _, ts in timesheets.items():
         timesheets_list.append({
             "id": int(ts["id"]),
@@ -129,10 +211,39 @@ def process_page(data):
             "jobcode_id": int(ts["jobcode_id"]),
             "start": ts["start"],
             "end": ts["end"],
+            "duration": ts["duration"],
             "date": ts["date"],
+            "tz": ts["tz"],
+            "tz_str": ts["tz_str"],
+            "type": ts["type"],
+            "location": ts["location"],
+            "on_the_clock": ts["on_the_clock"],
+            "locked": ts["locked"],
+            "notes": ts["notes"],
+            "customfields": ts.get("customfields", {}),
             "last_modified": ts["last_modified"],
         })
+        for cf_id, value in ts.get("customfields", {}).items():
+            timesheet_customfields_list.append({
+                    
+                        "timesheet_id": ts["id"],
+                        "customfield_id": int(cf_id),
+                        "value": value
+                        })
+            
+        for fi, file in ts.get("files", {}).items():
+            timesheet_files_list.append(
+                {
+                    "timesheet_id": ts["id"],
+                    "file_id": int(fi),
+                })
+            
     if timesheets_list:
         supabase_client.table("timesheets").upsert(timesheets_list).execute()
+        if timesheet_customfields_list:
+            supabase_client.table("timesheet_customfield_values").upsert(timesheet_customfields_list).execute()
+        if timesheet_files_list:
+            supabase_client.table("timesheet_files").upsert(timesheet_files_list).execute()
+    
 
     return len(timesheets)

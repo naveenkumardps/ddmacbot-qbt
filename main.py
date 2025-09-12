@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, Depends, HTTPException, Security
 from fastapi.responses import JSONResponse
 from config.database import *
-import Controller.AuthController, Controller.CustomerController, Controller.CustomeFieldController, Controller.TimesheetController, Controller.UserController, Controller.TaskController
+import Controller.AuthController, Controller.CustomerController, Controller.CustomeFieldController, Controller.TimesheetController, Controller.UserController, Controller.TaskController,Controller.ProjectController,Controller.ListController
 
 from Controller.UserController import *
 from Controller.CustomerController import *
@@ -84,6 +84,12 @@ app.include_router(
 )
 app.include_router(
     Controller.TaskController.route, dependencies=[Depends(verify_credentials)]
+)
+app.include_router(
+    Controller.ProjectController.route, dependencies=[Depends(verify_credentials)]
+)
+app.include_router(
+    Controller.ListController.route, dependencies=[Depends(verify_credentials)]
 )
 
 # Your task function

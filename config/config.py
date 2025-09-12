@@ -14,6 +14,7 @@ SUPABASE = {
     "SUPABASE_URL": os.getenv("SUPABASE_URL"),
     "SUPABASE_API_KEY": os.getenv("SUPABASE_API_KEY"),
     "SUPABASE_KEY": os.getenv("SUPABASE_KEY"),
+    "SUPABASE_BEARER_TOKEN": os.getenv("SUPABASE_BEARER_TOKEN"),
 }
 
 
