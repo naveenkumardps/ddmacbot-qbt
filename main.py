@@ -1,7 +1,10 @@
 from fastapi import FastAPI, Request, Depends, HTTPException, Security
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from config.database import *
-import Controller.AuthController, Controller.CustomerController, Controller.CustomeFieldController, Controller.TimesheetController, Controller.UserController, Controller.TaskController,Controller.ProjectController,Controller.ListController
+import Controller.AuthController, Controller.CustomerController, Controller.CustomeFieldController, Controller.TimesheetController, Controller.UserController, Controller.TaskController,Controller.ProjectController,Controller.ListController, Controller.UIController
+from middleware.auth import AuthMiddleware
+import os
 
 from Controller.UserController import *
 from Controller.CustomerController import *
@@ -31,27 +34,51 @@ logging.basicConfig(
 
 app = FastAPI(title=APPNAME)
 
+# Add authentication middleware
+app.add_middleware(AuthMiddleware, excluded_paths=[
+    "/login",
+    "/api/login", 
+    "/api/logout",
+    "/api/me",
+    "/api/dashboard-stats",
+    "/api/users-data",
+    "/api/user-listing-data", 
+    "/api/user-summary-data",
+    "/api/projects-data",
+    "/static",
+    "/docs",
+    "/openapi.json",
+    "/favicon.ico"
+])
+
+# Mount static files only if directory exists
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+else:
+    print("Warning: static directory not found. Creating it...")
+    os.makedirs("static", exist_ok=True)
+    os.makedirs("static/css", exist_ok=True)
+    os.makedirs("static/js", exist_ok=True)
+    os.makedirs("static/images", exist_ok=True)
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Define API Key + Secret headers
 api_key_header = APIKeyHeader(name="X-API-KEY", auto_error=False)
 
 VALID_API_KEY = APIKEY
 
-
 async def verify_credentials(api_key: str = Security(api_key_header)):
     if api_key != VALID_API_KEY:
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Invalid API Key")
-
     return True
-
 
 @app.middleware("http")
 async def api_key_middleware(request: Request, call_next):
-    # allow docs, redoc, and openapi.json without auth
-    if request.url.path in ["/docs", "/redoc", "/openapi.json"]:
+    # Allow docs, redoc, openapi.json, and UI routes without auth
+    if request.url.path in ["/docs", "/redoc", "/openapi.json", "/", "/dashboard", "/login", "/users", "/user-listing", "/user-summary", "/projects", "/timesheets", "/customers", "/tasks"] or request.url.path.startswith("/api/dashboard-stats") or request.url.path.startswith("/api/users-data") or request.url.path.startswith("/api/user-listing-data") or request.url.path.startswith("/api/user-summary-data") or request.url.path.startswith("/api/projects-data") or request.url.path.startswith("/api/login") or request.url.path.startswith("/api/logout") or request.url.path.startswith("/api/me"):
         return await call_next(request)
 
-    # check headers for other endpoints
+    # Check headers for other endpoints
     api_key = request.headers.get("X-API-KEY")
 
     if not api_key:
@@ -63,10 +90,12 @@ async def api_key_middleware(request: Request, call_next):
     if api_key != VALID_API_KEY:
         return JSONResponse(status_code=403, content={"detail": "Invalid API Key"})
 
-    # ✅ pass request forward if valid
     return await call_next(request)
 
+# Include UI routes (without authentication)
+app.include_router(Controller.UIController.ui_route)
 
+# Include all your existing API routers with authentication
 app.include_router(
     Controller.AuthController.route, dependencies=[Depends(verify_credentials)]
 )
@@ -92,7 +121,7 @@ app.include_router(
     Controller.ListController.route, dependencies=[Depends(verify_credentials)]
 )
 
-# Your task function
+# Your existing task function
 def daily_task():
     print("Running daily task at 5 PM:", datetime.datetime.now())
 
@@ -108,8 +137,9 @@ def start_scheduler():
     scheduler.add_job(syncFiles, CronTrigger(hour=17, minute=5))
     scheduler.start()
 
-@app.get("/")
-async def root():
+# Your existing API routes
+@app.get("/api/auth")
+async def auth_endpoint():
     querystring = {
         "response_type": "code",
         "client_id": QBTCLINETID,
@@ -125,7 +155,6 @@ async def root():
     )
     print(response)
 
-
 @app.get("/callback")
 async def callback(request: Request):
     code = request.query_params.get("code")
@@ -135,5 +164,4 @@ async def callback(request: Request):
 
     supabase_client.table("auth_tokens").insert(data).execute()
 
-    # Do something with code and state...
     return JSONResponse({"code": code, "state": state})

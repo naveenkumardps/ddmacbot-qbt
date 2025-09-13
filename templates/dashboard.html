@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Total Users</h4>
+                        <h2 id="totalUsers">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Active Projects</h4>
+                        <h2 id="activeProjects">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-project-diagram fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">This Week Hours</h4>
+                        <h2 id="weekHours">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">Pending Tasks</h4>
+                        <h2 id="pendingTasks">-</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tasks fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div id="recentActivity">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-list"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/users" class="btn btn-outline-primary">
+                        <i class="fas fa-users"></i> Manage Users
+                    </a>
+                    <a href="/projects" class="btn btn-outline-success">
+                        <i class="fas fa-project-diagram"></i> View Projects
+                    </a>
+                    <a href="/timesheets" class="btn btn-outline-warning">
+                        <i class="fas fa-clock"></i> Timesheets
+                    </a>
+                    <a href="/docs" class="btn btn-outline-info" target="_blank">
+                        <i class="fas fa-code"></i> API Documentation
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+});
+
+async function loadDashboardData() {
+    try {
+        const response = await fetch('/api/dashboard-stats');
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Error loading dashboard data:', data.error);
+        } else {
+            document.getElementById('totalUsers').textContent = data.total_users || 0;
+            document.getElementById('activeProjects').textContent = data.active_projects || 0;
+            document.getElementById('weekHours').textContent = data.week_hours || 0;
+            document.getElementById('pendingTasks').textContent = data.pending_tasks || 0;
+        }
+        
+        // Load recent activity
+        document.getElementById('recentActivity').innerHTML = `
+            <div class="list-group">
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">System Status</h6>
+                        <small class="text-success">Online</small>
+                    </div>
+                    <p class="mb-1">All systems are running normally</p>
+                </div>
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">Data Sync</h6>
+                        <small class="text-info">In Progress</small>
+                    </div>
+                    <p class="mb-1">Synchronizing with QuickBooks</p>
+                </div>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+        document.getElementById('recentActivity').innerHTML = `
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> Unable to load dashboard data
+            </div>
+        `;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,773 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-users"></i> User Listing - Detailed View
+        </h1>
+    </div>
+</div>
+
+<!-- Filters Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="fas fa-filter"></i> Search, Filter & Sort</h5>
+    </div>
+    <div class="card-body">
+        <!-- Search Bar -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control form-control-lg" id="globalSearch"
+                        placeholder="Search users, clients, or any field...">
+                    <button class="btn btn-outline-secondary" type="button" onclick="clearGlobalSearch()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Filters -->
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="userFilter" class="form-label">Username</label>
+                <input type="text" class="form-control" id="userFilter" placeholder="Filter by username">
+            </div>
+            <div class="col-md-3">
+                <label for="clientFilter" class="form-label">Client</label>
+                <input type="text" class="form-control" id="clientFilter" placeholder="Filter by client name">
+            </div>
+            <div class="col-md-2">
+                <label for="startDate" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="startDate">
+            </div>
+            <div class="col-md-2">
+                <label for="endDate" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="endDate">
+            </div>
+            <div class="col-md-2">
+                <label for="sortField" class="form-label">Sort By</label>
+                <select class="form-select" id="sortField">
+                    <option value="username">Username</option>
+                    <option value="total_hours">Total Hours</option>
+                    <option value="daily_average">Daily Average</option>
+                    <option value="days_worked">Days Worked</option>
+                    <option value="start_date">Start Date</option>
+                    <option value="end_date">End Date</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Sort and Display Options -->
+        <div class="row mt-3">
+            <div class="col-md-2">
+                <label for="sortOrder" class="form-label">Order</label>
+                <select class="form-select" id="sortOrder">
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="limit" class="form-label">Per Page</label>
+                <select class="form-select" id="limit">
+                    <option value="10">10</option>
+                    <option value="20" selected>20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="minHours" class="form-label">Min Hours</label>
+                <input type="number" class="form-control" id="minHours" placeholder="Min hours" min="0">
+            </div>
+            <div class="col-md-2">
+                <label for="maxHours" class="form-label">Max Hours</label>
+                <input type="number" class="form-control" id="maxHours" placeholder="Max hours" min="0">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button class="btn btn-primary me-2" onclick="applyFilters()">
+                    <i class="fas fa-search"></i> Apply Filters
+                </button>
+                <button class="btn btn-outline-secondary me-2" onclick="clearFilters()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+                <button class="btn btn-success" onclick="exportData()">
+                    <i class="fas fa-download"></i> Export
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Filter Chips -->
+        <div class="row mt-3" id="quickFilters" style="display: none;">
+            <div class="col-12">
+                <label class="form-label">Quick Filters:</label>
+                <div class="d-flex flex-wrap gap-2" id="filterChips">
+                    <!-- Filter chips will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Section -->
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h5 class="mb-0">
+                    <i class="fas fa-table"></i> User Details
+                    <span id="resultCount" class="badge bg-primary ms-2">-</span>
+                </h5>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-primary" onclick="refreshData()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="userListingTable">
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <nav id="paginationNav" class="mt-4" style="display: none;">
+            <ul class="pagination justify-content-center" id="paginationList">
+                <!-- Pagination will be generated here -->
+            </ul>
+        </nav>
+    </div>
+</div>
+
+<!-- Client Details Modal -->
+<div class="modal fade" id="clientModal" tabindex="-1" aria-labelledby="clientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clientModalLabel">Client Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="clientDetails">
+                    <!-- Client details will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Task Custom Fields Modal -->
+<div class="modal fade" id="taskFieldsModal" tabindex="-1" aria-labelledby="taskFieldsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskFieldsModalLabel">Task Custom Fields</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="taskFieldsDetails">
+                    <!-- Task fields will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentPage = 1;
+    let currentFilters = {};
+    let allUsers = []; // Store all users for client-side search
+    let filteredUsers = []; // Store filtered users
+    let currentSortField = 'username';
+    let currentSortOrder = 'asc';
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadUserListingData();
+
+        // Add event listeners for filter changes
+        document.getElementById('userFilter').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                applyFilters();
+            }
+        });
+
+        document.getElementById('clientFilter').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                applyFilters();
+            }
+        });
+
+        // Global search functionality
+        document.getElementById('globalSearch').addEventListener('input', function (e) {
+            performGlobalSearch(e.target.value);
+        });
+
+        // Min/Max hours filters
+        document.getElementById('minHours').addEventListener('input', function (e) {
+            applyFilters();
+        });
+
+        document.getElementById('maxHours').addEventListener('input', function (e) {
+            applyFilters();
+        });
+    });
+
+    async function loadUserListingData() {
+        try {
+            showLoading('userListingTable');
+
+            const params = new URLSearchParams({
+                page: currentPage,
+                limit: document.getElementById('limit').value,
+                sort_field: document.getElementById('sortField').value,
+                sort_order: document.getElementById('sortOrder').value,
+                ...currentFilters
+            });
+
+            const response = await fetch(`/api/user-listing-data?${params}`);
+            const result = await response.json();
+
+            if (result.success) {
+                allUsers = result.data; // Store all users for client-side operations
+                filteredUsers = [...allUsers]; // Initialize filtered users
+                displayUserListing(result.data, result.pagination);
+            } else {
+                showError('userListingTable', `Error loading data: ${result.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error loading user listing:', error);
+            showError('userListingTable', 'Error loading user listing data');
+        }
+    }
+
+    function displayUserListing(users, pagination) {
+        if (!users || users.length === 0) {
+            document.getElementById('userListingTable').innerHTML = `
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle"></i> No users found matching your criteria
+            </div>
+        `;
+            document.getElementById('paginationNav').style.display = 'none';
+            document.getElementById('resultCount').textContent = '0';
+            return;
+        }
+
+        // Update result count
+        document.getElementById('resultCount').textContent = pagination.total;
+
+        let tableHTML = `
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="sortable" data-field="username" onclick="sortTable('username')">
+                            Username <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable" data-field="total_hours" onclick="sortTable('total_hours')">
+                            Total Hours <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable" data-field="daily_average" onclick="sortTable('daily_average')">
+                            Daily Average <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable" data-field="days_worked" onclick="sortTable('days_worked')">
+                            Days Worked <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th class="sortable" data-field="start_date" onclick="sortTable('start_date')">
+                            Date Range <i class="fas fa-sort ms-1"></i>
+                        </th>
+                        <th>Clients</th>
+                        <th>Task Fields</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+        users.forEach(user => {
+            const startDate = user.start_date ? new Date(user.start_date).toLocaleDateString() : 'N/A';
+            const endDate = user.end_date ? new Date(user.end_date).toLocaleDateString() : 'N/A';
+            const dateRange = `${startDate} - ${endDate}`;
+
+            // Handle clients array - it can be large as shown in your data
+            const clients = user.clients && Array.isArray(user.clients) && user.clients.length > 0 ? user.clients : [];
+
+            // Handle task_custom_fields - can be null as shown in your data
+            const taskFields = user.task_custom_fields && Array.isArray(user.task_custom_fields) && user.task_custom_fields.length > 0 ? user.task_custom_fields : [];
+
+            // Format total hours with commas for large numbers
+            const formattedHours = user.total_hours ? user.total_hours.toLocaleString() : '0';
+
+            tableHTML += `
+            <tr>
+                <td>
+                    <a href="#" class="text-decoration-none fw-bold text-primary" onclick="viewUserDetails('${user.username}', '${user.user_id}', ${user.total_hours}, ${user.daily_average}, ${user.days_worked})">
+                        <i class="fas fa-user"></i> ${user.username || 'N/A'}
+                    </a>
+                </td>
+                <td>
+                    <span class="badge bg-primary fs-6">${formattedHours} hrs</span>
+                </td>
+                <td>
+                    <span class="badge bg-info">${user.daily_average ? user.daily_average.toFixed(2) : '0.00'} hrs/day</span>
+                </td>
+                <td>
+                    <span class="badge bg-success">${user.days_worked ? user.days_worked.toLocaleString() : '0'} days</span>
+                </td>
+                <td>
+                    <small class="text-muted">${dateRange}</small>
+                </td>
+                <td>
+                    ${clients.length > 0 ?
+                    `<button class="btn btn-sm btn-outline-primary" onclick="showClientDetails(${JSON.stringify(clients).replace(/"/g, '&quot;')})" title="View ${clients.length} clients">
+                            <i class="fas fa-building"></i> ${clients.length} client${clients.length > 1 ? 's' : ''}
+                        </button>` :
+                    '<span class="text-muted">No clients</span>'
+                }
+                </td>
+                <td>
+                    ${taskFields.length > 0 ?
+                    `<button class="btn btn-sm btn-outline-info" onclick="showTaskFields(${JSON.stringify(taskFields).replace(/"/g, '&quot;')})" title="View ${taskFields.length} fields">
+                            <i class="fas fa-tasks"></i> ${taskFields.length} field${taskFields.length > 1 ? 's' : ''}
+                        </button>` :
+                    '<span class="text-muted">No fields</span>'
+                }
+                </td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewUserDetails('${user.username}', ${user.user_id}, ${user.total_hours}, ${user.daily_average}, ${user.days_worked})" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="editUser('${user.username}', ${user.user_id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="viewTimesheet('${user.username}', ${user.user_id})" title="View Timesheet">
+                            <i class="fas fa-clock"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        });
+
+        tableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+        document.getElementById('userListingTable').innerHTML = tableHTML;
+
+        // Generate pagination
+        generatePagination(pagination);
+    }
+
+    function generatePagination(pagination) {
+        if (pagination.total_pages <= 1) {
+            document.getElementById('paginationNav').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('paginationNav').style.display = 'block';
+
+        let paginationHTML = '';
+        const currentPage = pagination.page;
+        const totalPages = pagination.total_pages;
+
+        // Previous button
+        paginationHTML += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'tabindex="-1"' : ''}>
+                <i class="fas fa-chevron-left"></i> Previous
+            </a>
+        </li>
+    `;
+
+        // Page numbers
+        const startPage = Math.max(1, currentPage - 2);
+        const endPage = Math.min(totalPages, currentPage + 2);
+
+        if (startPage > 1) {
+            paginationHTML += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(1)">1</a></li>`;
+            if (startPage > 2) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            paginationHTML += `
+            <li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+            </li>
+        `;
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+            paginationHTML += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${totalPages})">${totalPages}</a></li>`;
+        }
+
+        // Next button
+        paginationHTML += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'tabindex="-1"' : ''}>
+                Next <i class="fas fa-chevron-right"></i>
+            </a>
+        </li>
+    `;
+
+        document.getElementById('paginationList').innerHTML = paginationHTML;
+    }
+
+    function changePage(page) {
+        currentPage = page;
+        loadUserListingData();
+    }
+
+    function applyFilters() {
+        // Apply server-side filters
+        currentFilters = {
+            user_filter: document.getElementById('userFilter').value || null,
+            client_filter: document.getElementById('clientFilter').value || null,
+            start_date: document.getElementById('startDate').value || null,
+            end_date: document.getElementById('endDate').value || null,
+            sort_field: document.getElementById('sortField').value,
+            sort_order: document.getElementById('sortOrder').value
+        };
+
+        // Remove null values
+        currentFilters = Object.fromEntries(
+            Object.entries(currentFilters).filter(([_, v]) => v !== null)
+        );
+
+        currentPage = 1;
+        loadUserListingData();
+
+        // Apply client-side filters after data loads
+        setTimeout(() => {
+            applyClientSideFilters();
+        }, 100);
+    }
+
+    // Apply client-side filters (min/max hours)
+    function applyClientSideFilters() {
+        const minHours = parseFloat(document.getElementById('minHours').value) || 0;
+        const maxHours = parseFloat(document.getElementById('maxHours').value) || Infinity;
+
+        if (minHours > 0 || maxHours < Infinity) {
+            filteredUsers = allUsers.filter(user => {
+                const hours = parseFloat(user.total_hours) || 0;
+                return hours >= minHours && hours <= maxHours;
+            });
+
+            // Apply current sort
+            sortUsers(filteredUsers, currentSortField, currentSortOrder);
+
+            // Display filtered results
+            displayUserListing(filteredUsers, {
+                total: filteredUsers.length,
+                page: 1,
+                total_pages: 1,
+                limit: filteredUsers.length,
+                offset: 0
+            });
+        }
+    }
+
+    function clearFilters() {
+        document.getElementById('userFilter').value = '';
+        document.getElementById('clientFilter').value = '';
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        document.getElementById('sortField').value = 'username';
+        document.getElementById('sortOrder').value = 'asc';
+        document.getElementById('limit').value = '20';
+        document.getElementById('minHours').value = '';
+        document.getElementById('maxHours').value = '';
+        document.getElementById('globalSearch').value = '';
+
+        currentFilters = {};
+        currentPage = 1;
+        currentSortField = 'username';
+        currentSortOrder = 'asc';
+
+        // Clear filter chips
+        document.getElementById('quickFilters').style.display = 'none';
+
+        loadUserListingData();
+    }
+
+    function refreshData() {
+        loadUserListingData();
+    }
+
+    function showClientDetails(clients) {
+        const modal = new bootstrap.Modal(document.getElementById('clientModal'));
+        const clientDetails = document.getElementById('clientDetails');
+
+        let clientsHTML = '<div class="list-group">';
+        clients.forEach((client, index) => {
+            clientsHTML += `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-building text-primary me-2"></i>
+                    <strong>${client}</strong>
+                </div>
+                <span class="badge bg-primary rounded-pill">${index + 1}</span>
+            </div>
+        `;
+        });
+        clientsHTML += '</div>';
+
+        clientDetails.innerHTML = clientsHTML;
+        modal.show();
+    }
+
+    function showTaskFields(taskFields) {
+        const modal = new bootstrap.Modal(document.getElementById('taskFieldsModal'));
+        const taskFieldsDetails = document.getElementById('taskFieldsDetails');
+
+        let fieldsHTML = '<div class="list-group">';
+        taskFields.forEach((field, index) => {
+            fieldsHTML += `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-tag text-info me-2"></i>
+                    <strong>${field}</strong>
+                </div>
+                <span class="badge bg-info rounded-pill">${index + 1}</span>
+            </div>
+        `;
+        });
+        fieldsHTML += '</div>';
+
+        taskFieldsDetails.innerHTML = fieldsHTML;
+        modal.show();
+    }
+
+    function viewUserDetails(username, userId, totalHours, dailyAverage, totalDays) {
+        // Redirect to user summary page with user_id
+        if (userId) {
+            window.location.href = `/user-summary?user_id=${userId}&username=${username}&total_hours=${totalHours}&daily_average=${dailyAverage}&total_days=${totalDays}`;
+        } else {
+            alert(`User ID not found for user: ${username}`);
+        }
+    }
+
+    function editUser(username) {
+        // You can implement user edit functionality here
+        alert(`Edit user: ${username}`);
+    }
+
+    function viewTimesheet(username) {
+        // You can implement timesheet view here
+        alert(`View timesheet for user: ${username}`);
+    }
+
+    function exportData() {
+        // You can implement data export functionality here
+        alert('Export functionality will be implemented');
+    }
+
+    // Global search functionality
+    function performGlobalSearch(searchTerm) {
+        if (!searchTerm.trim()) {
+            filteredUsers = [...allUsers];
+            displayUserListing(filteredUsers, { total: filteredUsers.length, page: 1, total_pages: 1 });
+            return;
+        }
+
+        const term = searchTerm.toLowerCase();
+        filteredUsers = allUsers.filter(user => {
+            // Search in username
+            if (user.username && user.username.toLowerCase().includes(term)) return true;
+
+            // Search in clients array
+            if (user.clients && Array.isArray(user.clients)) {
+                if (user.clients.some(client => client.toLowerCase().includes(term))) return true;
+            }
+
+            // Search in task custom fields
+            if (user.task_custom_fields && Array.isArray(user.task_custom_fields)) {
+                if (user.task_custom_fields.some(field => field.toLowerCase().includes(term))) return true;
+            }
+
+            // Search in numeric fields
+            if (user.total_hours && user.total_hours.toString().includes(term)) return true;
+            if (user.daily_average && user.daily_average.toString().includes(term)) return true;
+            if (user.days_worked && user.days_worked.toString().includes(term)) return true;
+
+            // Search in dates
+            if (user.start_date && user.start_date.includes(term)) return true;
+            if (user.end_date && user.end_date.includes(term)) return true;
+
+            return false;
+        });
+
+        // Apply current sort
+        sortUsers(filteredUsers, currentSortField, currentSortOrder);
+
+        // Display results
+        displayUserListing(filteredUsers, {
+            total: filteredUsers.length,
+            page: 1,
+            total_pages: 1,
+            limit: filteredUsers.length,
+            offset: 0
+        });
+
+        // Show quick filter chips
+        showFilterChips(searchTerm);
+    }
+
+    // Sort table functionality
+    function sortTable(field) {
+        if (currentSortField === field) {
+            currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSortField = field;
+            currentSortOrder = 'asc';
+        }
+
+        // Update sort field and order in UI
+        document.getElementById('sortField').value = field;
+        document.getElementById('sortOrder').value = currentSortOrder;
+
+        // Sort the filtered users
+        sortUsers(filteredUsers, field, currentSortOrder);
+
+        // Display sorted results
+        displayUserListing(filteredUsers, {
+            total: filteredUsers.length,
+            page: 1,
+            total_pages: 1,
+            limit: filteredUsers.length,
+            offset: 0
+        });
+
+        // Update sort indicators
+        updateSortIndicators(field, currentSortOrder);
+    }
+
+    // Sort users array
+    function sortUsers(users, field, order) {
+        users.sort((a, b) => {
+            let aVal = a[field];
+            let bVal = b[field];
+
+            // Handle null/undefined values
+            if (aVal === null || aVal === undefined) aVal = '';
+            if (bVal === null || bVal === undefined) bVal = '';
+
+            // Handle numeric fields
+            if (field === 'total_hours' || field === 'daily_average' || field === 'days_worked') {
+                aVal = parseFloat(aVal) || 0;
+                bVal = parseFloat(bVal) || 0;
+            }
+
+            // Handle date fields
+            if (field === 'start_date' || field === 'end_date') {
+                aVal = new Date(aVal);
+                bVal = new Date(bVal);
+            }
+
+            // Handle string fields
+            if (typeof aVal === 'string') {
+                aVal = aVal.toLowerCase();
+                bVal = bVal.toLowerCase();
+            }
+
+            if (order === 'asc') {
+                return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+            } else {
+                return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+            }
+        });
+    }
+
+    // Update sort indicators in table headers
+    function updateSortIndicators(field, order) {
+        // Remove all sort indicators
+        document.querySelectorAll('.sortable i').forEach(icon => {
+            icon.className = 'fas fa-sort ms-1';
+        });
+
+        // Add sort indicator to current field
+        const currentHeader = document.querySelector(`[data-field="${field}"] i`);
+        if (currentHeader) {
+            currentHeader.className = order === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+        }
+    }
+
+    // Show filter chips
+    function showFilterChips(searchTerm) {
+        if (!searchTerm.trim()) {
+            document.getElementById('quickFilters').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('quickFilters').style.display = 'block';
+        document.getElementById('filterChips').innerHTML = `
+        <span class="badge bg-primary">
+            Search: "${searchTerm}" <button class="btn-close btn-close-white ms-1" onclick="clearGlobalSearch()"></button>
+        </span>
+    `;
+    }
+
+    // Clear global search
+    function clearGlobalSearch() {
+        document.getElementById('globalSearch').value = '';
+        filteredUsers = [...allUsers];
+        displayUserListing(filteredUsers, {
+            total: filteredUsers.length,
+            page: 1,
+            total_pages: 1,
+            limit: filteredUsers.length,
+            offset: 0
+        });
+        document.getElementById('quickFilters').style.display = 'none';
+    }
+
+    // Utility functions (using the ones from app.js)
+    function showLoading(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading...</p>
+            </div>
+        `;
+        }
+    }
+
+    function showError(elementId, message) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = `
+            <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> ${message}
+            </div>
+        `;
+        }
+    }
+</script>
+{% endblock %}

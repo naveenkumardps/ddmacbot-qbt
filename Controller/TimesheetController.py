@@ -30,6 +30,8 @@ def syncTimesheet(page, count):
             )
             data = ts_resp.json()
 
+            
+
             inserted_count = process_page(data)
             count += inserted_count
 

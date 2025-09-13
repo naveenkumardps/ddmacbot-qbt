@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-users"></i> Users Management
+        </h1>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h5 class="mb-0">Users List</h5>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" onclick="refreshUsers()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="usersTable">
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadUsers();
+});
+
+async function loadUsers() {
+    try {
+        const response = await fetch('/api/users-data?limit=20');
+        const result = await response.json();
+        
+        if (result.success) {
+            displayUsers(result.data);
+        } else {
+            document.getElementById('usersTable').innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i> Error loading users: ${result.error || 'Unknown error'}
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading users:', error);
+        document.getElementById('usersTable').innerHTML = `
+            <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> Error loading users
+            </div>
+        `;
+    }
+}
+
+function displayUsers(users) {
+    if (!users || users.length === 0) {
+        document.getElementById('usersTable').innerHTML = `
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle"></i> No users found
+            </div>
+        `;
+        return;
+    }
+    
+    let tableHTML = `
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Last Login</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    users.forEach(user => {
+        tableHTML += `
+            <tr>
+                <td>${user.username || 'N/A'}</td>
+                <td>${user.email || 'N/A'}</td>
+                <td><span class="badge bg-success">Active</span></td>
+                <td>${user.last_login || 'Never'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    document.getElementById('usersTable').innerHTML = tableHTML;
+}
+
+function refreshUsers() {
+    document.getElementById('usersTable').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    loadUsers();
+}
+</script>
+{% endblock %}

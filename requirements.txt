@@ -19,3 +19,5 @@ openpyxl
 typing
 python-multipart
 apscheduler
+aiofiles
+PyJWT

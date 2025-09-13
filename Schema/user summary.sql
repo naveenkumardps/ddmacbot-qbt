@@ -1,106 +1,91 @@
--- Simplified version with essential filters for API integration
-CREATE OR REPLACE FUNCTION get_user_summary_simple_v5(
-    -- Essential filters
-    p_start_date DATE DEFAULT NULL,
-    p_end_date DATE DEFAULT NULL,
-    p_user_filter TEXT DEFAULT NULL,
-    p_client_filter TEXT DEFAULT NULL,
-    p_project_filter TEXT DEFAULT NULL,
-    
-    -- Sorting and pagination
-    p_sort_field TEXT DEFAULT 'username',
-    p_sort_order TEXT DEFAULT 'asc',
-    p_limit_count INT DEFAULT 100,
-    p_offset_count INT DEFAULT 0
+create or replace function get_user_summaries_v2(
+    p_start_date date default null,
+    p_end_date date default null,
+    p_user_filter text default null,
+    p_client_filter text default null,
+    p_sort_field text default 'username',
+    p_sort_order text default 'asc',
+    p_limit_count int default 50,
+    p_offset_count int default 0
 )
-RETURNS TABLE (
-    user_id BIGINT,
-    username TEXT,
-    start_date DATE,
-    end_date DATE,
-    total_hours NUMERIC,
-    days_worked INT,
-    daily_average NUMERIC,
-    clients TEXT[],
-    task_custom_fields TEXT[]
-) AS $$
-WITH user_timesheet_data AS (
-    SELECT 
-        t.user_id,
-        COALESCE(u.username, TRIM(u.first_name || ' ' || u.last_name)) AS username,
-        t.id as timesheet_id,
-        t.jobcode_id,
-        j.name as jobcode_name,
-        p.name as project_name,
-        NULLIF(t."start", '')::timestamptz AS start_ts,
-        NULLIF(t."end", '')::timestamptz AS end_ts,
-        EXTRACT(EPOCH FROM (NULLIF(t."end", '')::timestamptz - NULLIF(t."start", '')::timestamptz))/3600.0 AS hours,
-        DATE(NULLIF(t."start", '')::timestamptz) AS work_date,
-        tcf.customfield_id,
-        cf.name as custom_field_name,
-        tcf.value as custom_field_value,
-        cfo.name as custom_field_option_name
-    FROM public.timesheets t
-    JOIN public.users u ON u.id = t.user_id
-    JOIN public.jobcodes j ON j.id = t.jobcode_id
-    LEFT JOIN public.projects p ON p.jobcode_id = j.id
-    LEFT JOIN public.timesheet_customfield_values tcf ON tcf.timesheet_id = t.id
-    LEFT JOIN public.custom_fields cf ON cf.id = tcf.customfield_id
-    LEFT JOIN public.custom_field_options cfo ON cfo.customfield_id = cf.id AND cfo.name = tcf.value
-    WHERE 
-        (p_start_date IS NULL OR DATE(NULLIF(t."start", '')::timestamptz) >= p_start_date)
-        AND (p_end_date IS NULL OR DATE(NULLIF(t."start", '')::timestamptz) <= p_end_date)
-        AND (p_user_filter IS NULL OR COALESCE(u.username, TRIM(u.first_name || ' ' || u.last_name)) ILIKE '%' || p_user_filter || '%')
-        AND (p_client_filter IS NULL OR j.name ILIKE '%' || p_client_filter || '%')
-        AND (p_project_filter IS NULL OR p.name ILIKE '%' || p_project_filter || '%')
-        AND NULLIF(t."start", '') IS NOT NULL 
-        AND NULLIF(t."end", '') IS NOT NULL
-),
-user_summary AS (
-    SELECT 
-        utd.user_id,
-        utd.username,
-        MIN(utd.work_date) AS start_date,
-        MAX(utd.work_date) AS end_date,
-        ROUND(SUM(utd.hours)::numeric, 2) AS total_hours,
-        COUNT(DISTINCT utd.work_date) AS days_worked,
-        ROUND(SUM(utd.hours)::numeric / NULLIF(COUNT(DISTINCT utd.work_date), 0), 2) AS daily_average,
-        ARRAY_AGG(DISTINCT utd.jobcode_name) FILTER (WHERE utd.jobcode_name IS NOT NULL) AS clients,
-        ARRAY_AGG(DISTINCT 
-            CASE 
-                WHEN utd.custom_field_option_name IS NOT NULL 
-                THEN utd.jobcode_name || utd.custom_field_option_name
-                WHEN utd.custom_field_value IS NOT NULL AND utd.custom_field_name IS NOT NULL
-                THEN utd.jobcode_name || utd.custom_field_name || ':' || utd.custom_field_value
-                ELSE NULL
-            END
-        ) FILTER (WHERE 
-            (utd.custom_field_option_name IS NOT NULL) OR 
-            (utd.custom_field_value IS NOT NULL AND utd.custom_field_name IS NOT NULL)
-        ) AS task_custom_fields
-    FROM user_timesheet_data utd
-    GROUP BY utd.user_id, utd.username
+returns table (
+    user_id int,
+    username text,
+    start_date date,
+    end_date date,
+    total_hours numeric,
+    days_worked int,
+    daily_average numeric,
+    clients text[],
+    task_custom_fields text[]
 )
-SELECT 
-    us.user_id,
-    us.username,
-    us.start_date,
-    us.end_date,
-    us.total_hours,
-    us.days_worked,
-    us.daily_average,
-    us.clients,
-    us.task_custom_fields
-FROM user_summary us
-ORDER BY
-    CASE WHEN p_sort_field='username' AND p_sort_order='asc' THEN us.username END ASC,
-    CASE WHEN p_sort_field='username' AND p_sort_order='desc' THEN us.username END DESC,
-    CASE WHEN p_sort_field='total_hours' AND p_sort_order='asc' THEN us.total_hours END ASC,
-    CASE WHEN p_sort_field='total_hours' AND p_sort_order='desc' THEN us.total_hours END DESC,
-    CASE WHEN p_sort_field='daily_average' AND p_sort_order='asc' THEN us.daily_average END ASC,
-    CASE WHEN p_sort_field='daily_average' AND p_sort_order='desc' THEN us.daily_average END DESC
-LIMIT p_limit_count OFFSET p_offset_count;
-$$ LANGUAGE sql STABLE;
-
-
-select * from get_user_summary_simple_v5(10)
+language plpgsql
+as $$
+begin
+    return query
+    with user_timesheet_data as (
+        select 
+            t.user_id,
+            coalesce(u.username, trim(u.first_name || ' ' || u.last_name)) as username,
+            t.id as timesheet_id,
+            t.jobcode_id,
+            j.name as jobcode_name,
+            nullif(t."start", '')::timestamptz as start_ts,
+            nullif(t."end", '')::timestamptz as end_ts,
+            extract(epoch from (nullif(t."end", '')::timestamptz - nullif(t."start", '')::timestamptz))/3600.0 as hours,
+            date(nullif(t."start", '')::timestamptz) as work_date,
+            tcf.customfield_id,
+            cf.name as custom_field_name,
+            tcf.value as custom_field_value,
+            cfo.name as custom_field_option_name
+        from public.timesheets t
+        join public.users u on u.id = t.user_id
+        join public.jobcodes j on j.id = t.jobcode_id
+        left join public.timesheet_customfield_values tcf on tcf.timesheet_id = t.id
+        left join public.custom_fields cf on cf.id = tcf.customfield_id
+        left join public.custom_field_options cfo 
+            on cfo.customfield_id = cf.id 
+           and cfo.name = tcf.value
+        where 
+            (p_start_date is null or date(nullif(t."start", '')::timestamptz) >= p_start_date)
+            and (p_end_date is null or date(nullif(t."start", '')::timestamptz) <= p_end_date)
+            and (p_user_filter is null or coalesce(u.username, trim(u.first_name || ' ' || u.last_name)) ilike '%' || p_user_filter || '%')
+            and (p_client_filter is null or j.name ilike '%' || p_client_filter || '%')
+            and nullif(t."start", '') is not null 
+            and nullif(t."end", '') is not null
+    ),
+    user_summary as (
+        select 
+            utd.user_id,
+            utd.username,
+            min(utd.work_date) as start_date,
+            max(utd.work_date) as end_date,
+            round(sum(utd.hours)::numeric, 2) as total_hours,
+            count(distinct utd.work_date) as days_worked,
+            round(sum(utd.hours)::numeric / nullif(count(distinct utd.work_date), 0), 2) as daily_average,
+            array_agg(distinct utd.jobcode_name) filter (where utd.jobcode_name is not null) as clients,
+            array_agg(distinct utd.custom_field_option_name) filter (where utd.custom_field_option_name is not null) as task_custom_fields
+        from user_timesheet_data utd
+        group by utd.user_id, utd.username
+    )
+    select 
+        us.user_id,
+        us.username,
+        us.start_date,
+        us.end_date,
+        us.total_hours,
+        us.days_worked,
+        us.daily_average,
+        us.clients,
+        us.task_custom_fields
+    from user_summary us
+    order by
+        case when p_sort_field='username' and p_sort_order='asc' then us.username end asc,
+        case when p_sort_field='username' and p_sort_order='desc' then us.username end desc,
+        case when p_sort_field='total_hours' and p_sort_order='asc' then us.total_hours end asc,
+        case when p_sort_field='total_hours' and p_sort_order='desc' then us.total_hours end desc,
+        case when p_sort_field='daily_average' and p_sort_order='asc' then us.daily_average end asc,
+        case when p_sort_field='daily_average' and p_sort_order='desc' then us.daily_average end desc
+    limit p_limit_count offset p_offset_count;
+end;
+$$;

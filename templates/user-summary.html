@@ -1,0 +1,525 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0">
+                <i class="fas fa-user"></i> User Summary - <span id="userName">Loading...</span>
+            </h1>
+            <div>
+                <a href="/user-listing" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to User Listing
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Info Card -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="fas fa-info-circle"></i> User Information</h5>
+    </div>
+    <div class="card-body">
+        <div class="row" id="userInfo">
+            <div class="col-md-3">
+                <strong>Username:</strong> <span id="userUsername">-</span>
+            </div>
+            <div class="col-md-3">
+                <strong>Toal Days:</strong> <span id="totalDays">-</span>
+            </div>
+            <div class="col-md-3">
+                <strong>Total Hours:</strong> <span id="userTotalHours">-</span>
+            </div>
+            <div class="col-md-3">
+                <strong>Daily Average:</strong> <span id="userDailyAverage">-</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Type Toggle -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="fas fa-chart-bar"></i> Summary Type</h5>
+    </div>
+    <div class="card-body">
+        <div class="btn-group" role="group" aria-label="Summary type">
+            <input type="radio" class="btn-check" name="summaryType" id="dailySummary" value="daily" checked>
+            <label class="btn btn-outline-primary" for="dailySummary">
+                <i class="fas fa-calendar-day"></i> Daily Summary
+            </label>
+
+            <input type="radio" class="btn-check" name="summaryType" id="weeklySummary" value="weekly">
+            <label class="btn btn-outline-success" for="weeklySummary">
+                <i class="fas fa-calendar-week"></i> Weekly Summary
+            </label>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="fas fa-filter"></i> Filters</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="clientFilter" class="form-label">Client Filter</label>
+                <input type="text" class="form-control" id="clientFilter" placeholder="Filter by client name">
+            </div>
+            <div class="col-md-3">
+                <label for="startDate" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="startDate">
+            </div>
+            <div class="col-md-3">
+                <label for="endDate" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="endDate">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button class="btn btn-primary me-2" onclick="loadSummaryData()">
+                    <i class="fas fa-search"></i> Apply Filters
+                </button>
+                <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Data -->
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h5 class="mb-0">
+                    <i class="fas fa-table"></i> <span id="summaryTitle">Daily Summary</span>
+                </h5>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-primary" onclick="loadSummaryData()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="summaryTable">
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pagination Controls -->
+        <div id="paginationControls" class="d-none">
+            <nav aria-label="Summary data pagination">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <label for="pageSize" class="form-label me-2 mb-0">Show:</label>
+                            <select id="pageSize" class="form-select form-select-sm me-3" style="width: auto;" onchange="changePageSize()">
+                                <option value="10">10</option>
+                                <option value="20" selected>20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                            <span id="paginationInfo" class="text-muted"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="pagination pagination-sm justify-content-end mb-0" id="paginationList">
+                            <!-- Pagination buttons will be inserted here -->
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+<div class="row mt-4" id="summaryStats" style="display: none;">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h4 id="totalHours">-</h4>
+                <p class="mb-0">Total Hours</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h4 id="totalDays">-</h4>
+                <p class="mb-0">Total Days</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h4 id="averageHours">-</h4>
+                <p class="mb-0">Average Hours</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <h4 id="totalClients">-</h4>
+                <p class="mb-0">Unique Clients</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentUserId = null;
+    let currentSummaryType = 'daily';
+    let summaryData = [];
+    let currentPage = 1;
+    let pageSize = 20;
+    let paginationInfo = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Get user ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        currentUserId = urlParams.get('user_id');
+        currentUserName = urlParams.get('username');
+        currentTotalHours = urlParams.get('total_hours');
+        currentDailyAverage = urlParams.get('daily_average');
+        currentTotalDays = urlParams.get('total_days');
+
+        if (!currentUserId) {
+            showError('summaryTable', 'User ID is required');
+            return;
+        }
+
+        if (currentUserName) {
+            document.getElementById('userName').textContent = currentUserName;
+            document.getElementById('userUsername').textContent = currentUserName;
+            document.getElementById('totalDays').textContent = currentTotalDays;
+        }
+
+        if (currentTotalHours) {
+            document.getElementById('userTotalHours').textContent = currentTotalHours;
+        }
+
+        if (currentDailyAverage) {
+            document.getElementById('userDailyAverage').textContent = currentDailyAverage;
+        }
+
+        // Load user information first
+
+        // Set up event listeners
+        document.querySelectorAll('input[name="summaryType"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                currentSummaryType = this.value;
+                updateSummaryTitle();
+                loadSummaryData();
+            });
+        });
+
+        // Set default dates (last 30 days)
+
+
+        // Load initial data
+        loadSummaryData();
+    });
+
+
+
+    async function loadSummaryData() {
+        if (!currentUserId) {
+            showError('summaryTable', 'User ID is required');
+            return;
+        }
+
+        try {
+            showLoading('summaryTable');
+
+            const clientFilter = document.getElementById('clientFilter').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            const params = new URLSearchParams({
+                user_id: currentUserId,
+                period: currentSummaryType,
+                page: currentPage,
+                limit: pageSize,
+                ...(clientFilter && { client: clientFilter }),
+                ...(startDate && { start_date: startDate }),
+                ...(endDate && { end_date: endDate })
+            });
+
+            console.log('Loading data with params:', {
+                user_id: currentUserId,
+                period: currentSummaryType,
+                page: currentPage,
+                limit: pageSize,
+                clientFilter,
+                startDate,
+                endDate
+            });
+
+            const response = await fetch(`/api/user-summary-data?${params}`);
+            const result = await response.json();
+
+            if (result.success) {
+                summaryData = result.data || [];
+                paginationInfo = result.pagination || null;
+                console.log('Loaded data:', summaryData.length, 'items');
+                console.log('Pagination info:', paginationInfo);
+                displaySummaryData(summaryData);
+                updatePaginationControls();
+            } else {
+                showError('summaryTable', `Error loading summary data: ${result.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error loading summary data:', error);
+            showError('summaryTable', 'Error loading summary data');
+        }
+    }
+
+    function displaySummaryData(data) {
+        if (!data || data.length === 0) {
+            document.getElementById('summaryTable').innerHTML = `
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle"></i> No summary data found for the selected period and filters
+            </div>
+        `;
+            return;
+        }
+
+        const isWeekly = currentSummaryType === 'weekly';
+        const dateField = isWeekly ? 'week_start' : 'date';
+        const dateLabel = isWeekly ? 'Week' : 'Date';
+
+        let tableHTML = `
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>${dateLabel}</th>
+                        <th>Hours</th>
+                        <th>Clients</th>
+                        <th>Tasks</th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+
+        data.forEach(item => {
+            const date = isWeekly ? item.work_week : item.work_day || 'N/A';
+            const hours = item.hours;
+            const clients = item.client;
+            const projects = item.task == 'Unspecified' ? '' : item.task;
+
+            tableHTML += `
+            <tr>
+                <td><strong>${date}</strong></td>
+                <td><span class="badge bg-primary fs-6">${hours.toFixed(2)} hrs</span></td>
+                <td>
+                ${clients}
+                </td>
+                <td>
+                    ${projects}
+                </td>
+            </tr>
+        `;
+        });
+
+        tableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+
+        document.getElementById('summaryTable').innerHTML = tableHTML;
+    }
+
+    function updateSummaryTitle() {
+        const title = currentSummaryType === 'weekly' ? 'Weekly Summary' : 'Daily Summary';
+        document.getElementById('summaryTitle').textContent = title;
+    }
+
+    function clearFilters() {
+        document.getElementById('clientFilter').value = '';
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        currentPage = 1;
+        loadSummaryData();
+    }
+
+    function updatePaginationControls() {
+        const paginationControls = document.getElementById('paginationControls');
+        const paginationInfoElement = document.getElementById('paginationInfo');
+        const paginationList = document.getElementById('paginationList');
+        
+        if (!paginationInfo || summaryData.length === 0) {
+            paginationControls.classList.add('d-none');
+            return;
+        }
+        
+        paginationControls.classList.remove('d-none');
+        
+        // Update pagination info
+        const start = paginationInfo.offset + 1;
+        const end = Math.min(paginationInfo.offset + paginationInfo.limit, paginationInfo.total);
+        paginationInfoElement.textContent = `Showing ${start}-${end} of ${paginationInfo.total} entries`;
+        
+        // Update page size selector
+        document.getElementById('pageSize').value = paginationInfo.limit;
+        
+        // Generate pagination buttons
+        let paginationHTML = '';
+        
+        // Previous button
+        paginationHTML += `
+            <li class="page-item ${!paginationInfo.has_prev ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${paginationInfo.page - 1})" ${!paginationInfo.has_prev ? 'tabindex="-1"' : ''}>
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+        `;
+        
+        // Page numbers
+        const startPage = Math.max(1, paginationInfo.page - 2);
+        const endPage = Math.min(paginationInfo.total_pages, paginationInfo.page + 2);
+        
+        if (startPage > 1) {
+            paginationHTML += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(1)">1</a></li>`;
+            if (startPage > 2) {
+                paginationHTML += `<li class="page-item"><span class="page-link">...</span></li>`;
+            }
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            paginationHTML += `
+                <li class="page-item ${i === paginationInfo.page ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                </li>
+            `;
+        }
+        
+        if (endPage < paginationInfo.total_pages) {
+            if (endPage < paginationInfo.total_pages - 1) {
+                paginationHTML += `<li class="page-item"><span class="page-link">...</span></li>`;
+            }
+            paginationHTML += `<li class="page-item"><a class="page-link" href="#" onclick="changePage(${paginationInfo.total_pages})">${paginationInfo.total_pages}</a></li>`;
+        }
+        
+        // Next button
+        paginationHTML += `
+            <li class="page-item ${!paginationInfo.has_next ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${paginationInfo.page + 1})" ${!paginationInfo.has_next ? 'tabindex="-1"' : ''}>
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+        `;
+        
+        paginationList.innerHTML = paginationHTML;
+    }
+
+    function changePage(page) {
+        console.log('changePage called with page:', page);
+        console.log('current paginationInfo:', paginationInfo);
+        
+        if (page < 1 || (paginationInfo && page > paginationInfo.total_pages)) {
+            console.log('Page change blocked - invalid page number');
+            return;
+        }
+        
+        console.log('Changing to page:', page);
+        currentPage = page;
+        loadSummaryData();
+    }
+
+    function changePageSize() {
+        pageSize = parseInt(document.getElementById('pageSize').value);
+        currentPage = 1;
+        loadSummaryData();
+    }
+
+    function showDetails(type, items) {
+        const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+        const modalTitle = document.getElementById('detailsModalLabel');
+        const modalBody = document.getElementById('detailsModalBody');
+
+        modalTitle.textContent = `${type.charAt(0).toUpperCase() + type.slice(1)} Details`;
+
+        let itemsHTML = '<div class="list-group">';
+        items.forEach((item, index) => {
+            itemsHTML += `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-${type === 'clients' ? 'building' : type === 'projects' ? 'project-diagram' : 'tasks'} text-primary me-2"></i>
+                    <strong>${item}</strong>
+                </div>
+                <span class="badge bg-primary rounded-pill">${index + 1}</span>
+            </div>
+        `;
+        });
+        itemsHTML += '</div>';
+
+        modalBody.innerHTML = itemsHTML;
+        modal.show();
+    }
+
+    function viewDetails(date) {
+        alert(`View details for ${date}`);
+    }
+
+    // Utility functions
+    function showLoading(elementId) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading...</p>
+            </div>
+        `;
+        }
+    }
+
+    function showError(elementId, message) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.innerHTML = `
+            <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> ${message}
+            </div>
+        `;
+        }
+    }
+</script>
+
+<!-- Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailsModalLabel">Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="detailsModalBody">
+                <!-- Details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

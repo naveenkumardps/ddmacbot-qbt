@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header text-center bg-primary text-white">
+                <h4><i class="fas fa-sign-in-alt"></i> Login to QB Times</h4>
+            </div>
+            <div class="card-body">
+                <!-- Error Alert -->
+                <div id="errorAlert" class="alert alert-danger d-none" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i> <span id="errorMessage"></span>
+                </div>
+                
+                <!-- Success Alert -->
+                <div id="successAlert" class="alert alert-success d-none" role="alert">
+                    <i class="fas fa-check-circle"></i> <span id="successMessage"></span>
+                </div>
+
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user"></i> Username
+                        </label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock"></i> Password
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary" id="loginBtn">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="mt-3 text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Default credentials: admin / admin123
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const errorAlert = document.getElementById('errorAlert');
+    const successAlert = document.getElementById('successAlert');
+    const errorMessage = document.getElementById('errorMessage');
+    const successMessage = document.getElementById('successMessage');
+    const loginBtn = document.getElementById('loginBtn');
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorAlert.classList.remove('d-none');
+        successAlert.classList.add('d-none');
+    }
+
+    function showSuccess(message) {
+        successMessage.textContent = message;
+        successAlert.classList.remove('d-none');
+        errorAlert.classList.add('d-none');
+    }
+
+    function hideAlerts() {
+        errorAlert.classList.add('d-none');
+        successAlert.classList.add('d-none');
+    }
+
+    loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        hideAlerts();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        if (!username || !password) {
+            showError('Please enter both username and password');
+            return;
+        }
+
+        // Disable button and show loading
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+
+        try {
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('password', password);
+
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showSuccess('Login successful! Redirecting...');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+            } else {
+                showError(data.detail || 'Login failed. Please check your credentials.');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showError('An error occurred during login. Please try again.');
+        } finally {
+            // Re-enable button
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+        }
+    });
+
+    // Check if user is already logged in
+    checkAuthStatus();
+    
+    async function checkAuthStatus() {
+        try {
+            const response = await fetch('/api/me');
+            if (response.ok) {
+                // User is already logged in, redirect to dashboard
+                window.location.href = '/';
+            }
+        } catch (error) {
+            // User is not logged in, stay on login page
+        }
+    }
+});
+</script>
+{% endblock %}

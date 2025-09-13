@@ -26,3 +26,11 @@ QBTCLINETID = os.getenv("QBTCLINETID")
 QBTCLINETSECRET = os.getenv("QBTCLINETSECRET")
 
 APIKEY = os.getenv("X-API-KEY")
+
+# Authentication settings
+AUTH = {
+    "ADMIN_USERNAME": os.getenv("ADMIN_USERNAME", "admin"),
+    "ADMIN_PASSWORD": os.getenv("ADMIN_PASSWORD", "admin123"),
+    "SESSION_SECRET_KEY": os.getenv("SESSION_SECRET_KEY", "your-secret-key-change-this-in-production"),
+    "SESSION_EXPIRE_HOURS": int(os.getenv("SESSION_EXPIRE_HOURS", "24"))
+}

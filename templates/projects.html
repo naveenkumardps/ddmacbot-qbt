@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-project-diagram"></i> Projects Management
+        </h1>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h5 class="mb-0">Projects List</h5>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" onclick="refreshProjects()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="projectsTable">
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+});
+
+async function loadProjects() {
+    try {
+        const response = await fetch('/api/projects-data?limit=20');
+        const result = await response.json();
+        
+        if (result.success) {
+            displayProjects(result.data);
+        } else {
+            document.getElementById('projectsTable').innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i> Error loading projects: ${result.error || 'Unknown error'}
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading projects:', error);
+        document.getElementById('projectsTable').innerHTML = `
+            <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> Error loading projects
+            </div>
+        `;
+    }
+}
+
+function displayProjects(projects) {
+    if (!projects || projects.length === 0) {
+        document.getElementById('projectsTable').innerHTML = `
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle"></i> No projects found
+            </div>
+        `;
+        return;
+    }
+    
+    let tableHTML = `
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Project Name</th>
+                        <th>Total Hours</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    projects.forEach(project => {
+        tableHTML += `
+            <tr>
+                <td><strong>${project.jobcode_name || 'N/A'}</strong></td>
+                <td><span class="badge bg-primary">${project.total_hours || 0} hrs</span></td>
+                <td>${project.jobcode_start || 'N/A'}</td>
+                <td>${project.jobcode_end || 'N/A'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    document.getElementById('projectsTable').innerHTML = tableHTML;
+}
+
+function refreshProjects() {
+    document.getElementById('projectsTable').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+    loadProjects();
+}
+</script>
+{% endblock %}
