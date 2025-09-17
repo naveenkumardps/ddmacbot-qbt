@@ -439,3 +439,21 @@ async def get_user_summary_data(
             "error": str(e)
         }
 
+
+@ui_route.get("/client-time-summary")
+async def client_time_summary_page(request: Request):
+    """Client Time Summary page"""
+    return templates.TemplateResponse("client-time-summary.html", {
+        "request": request,
+        "title": "Client Time Summary"
+    })
+
+
+@ui_route.get("/client-user-details/{jobcode_id}")
+async def client_user_details_page(request: Request, jobcode_id: int):
+    """Client User Details page"""
+    return templates.TemplateResponse("client-user-details.html", {
+        "request": request,
+        "title": f"Client User Details - Jobcode {jobcode_id}",
+        "jobcode_id": jobcode_id
+    })

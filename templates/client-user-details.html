@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+
+{% block title %}Client User Details - Jobcode {{ jobcode_id }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="card-title">
+                                <i class="fas fa-users mr-2"></i>User Details for Jobcode: <strong id="jobcodeId">{{ jobcode_id }}</strong>
+                            </h3>
+                            <p class="text-muted mb-0">Individual user contributions to this client</p>
+                        </div>
+                        <div>
+                            <a href="/client-time-summary" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left mr-1"></i>Back to Client Summary
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <div class="row mb-3">
+                        <div class="col-md-2">
+                            <label for="userIdFilter" class="form-label">User ID</label>
+                            <input type="number" class="form-control" id="userIdFilter" placeholder="Enter User ID">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="projectFilter" class="form-label">Project</label>
+                            <select class="form-control" id="projectFilter">
+                                <option value="">All Projects</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="startDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="startDate">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="endDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="endDate">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="limitSelect" class="form-label">Per Page</label>
+                            <select class="form-control" id="limitSelect">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-primary mr-2" id="filterBtn">
+                                <i class="fas fa-search mr-1"></i>Filter
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="clearBtn">
+                                <i class="fas fa-times mr-1"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Loading Spinner -->
+                    <div id="loadingSpinner" class="text-center" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading user data...</p>
+                    </div>
+
+                    <!-- Results Table -->
+                    <div id="resultsContainer">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped" id="userDataTable">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Total Hours</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Days Worked</th>
+                                        <th>Avg Hours/Day</th>
+                                        <th>Projects</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="userDataTableBody">
+                                    <!-- Data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        <nav aria-label="User data pagination" id="paginationContainer">
+                            <ul class="pagination justify-content-center" id="paginationList">
+                                <!-- Pagination will be generated here -->
+                            </ul>
+                        </nav>
+
+                        <!-- No Data Message -->
+                        <div id="noDataMessage" class="text-center" style="display: none;">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                No user data found for this client with the selected filters.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mt-3" id="summaryCards" style="display: none;">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="totalUsers">0</h4>
+                        <p class="card-text">Total Users</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="totalHours">0</h4>
+                        <p class="card-text">Total Hours</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="avgHoursPerUser">0</h4>
+                        <p class="card-text">Avg Hours/User</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chart-bar fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title" id="totalDays">0</h4>
+                        <p class="card-text">Total Days</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-calendar fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentPage = 1;
+    let currentLimit = 10;
+    let currentData = null;
+    const jobcodeId = {{ jobcode_id }};
+
+    // Load initial data
+    loadProjectList();
+    loadClientUserData();
+
+    // Event listeners
+    document.getElementById('filterBtn').addEventListener('click', function() {
+        currentPage = 1;
+        loadClientUserData();
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', function() {
+        clearFilters();
+        currentPage = 1;
+        loadClientUserData();
+    });
+
+    document.getElementById('limitSelect').addEventListener('change', function() {
+        currentLimit = parseInt(this.value);
+        currentPage = 1;
+        loadClientUserData();
+    });
+
+    // Load project list for dropdown
+    async function loadProjectList() {
+        try {
+            const response = await fetch('/api/v1/project-list');
+            const projects = await response.json();
+            
+            const projectSelect = document.getElementById('projectFilter');
+            projectSelect.innerHTML = '<option value="">All Projects</option>';
+            
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.project_name;
+                option.textContent = project.project_name;
+                projectSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading project list:', error);
+        }
+    }
+
+    // Load client user data
+    async function loadClientUserData() {
+        const projectFilter = document.getElementById('projectFilter').value;
+        const userIdFilter = document.getElementById('userIdFilter').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        // Show loading spinner
+        document.getElementById('loadingSpinner').style.display = 'block';
+        document.getElementById('resultsContainer').style.display = 'none';
+        document.getElementById('summaryCards').style.display = 'none';
+
+        try {
+            const params = new URLSearchParams({
+                page: currentPage,
+                limit: currentLimit
+            });
+
+            if (projectFilter) params.append('project_name', projectFilter);
+            if (userIdFilter) params.append('user_id', userIdFilter);
+            if (startDate) params.append('start_date', startDate);
+            if (endDate) params.append('end_date', endDate);
+
+            const response = await fetch(`/api/v1/client-user-data/${jobcodeId}?${params}`);
+            const data = await response.json();
+
+            currentData = data;
+            displayUserData(data);
+            updateSummaryCards(data);
+            generatePagination(data);
+
+        } catch (error) {
+            console.error('Error loading client user data:', error);
+            showError('Failed to load user data');
+        } finally {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('resultsContainer').style.display = 'block';
+        }
+    }
+
+    // Display user data in table
+    function displayUserData(data) {
+        const tbody = document.getElementById('userDataTableBody');
+        tbody.innerHTML = '';
+
+        if (!data.data || data.data.length === 0) {
+            document.getElementById('noDataMessage').style.display = 'block';
+            return;
+        }
+
+        console.log(data.data)
+
+        document.getElementById('noDataMessage').style.display = 'none';
+
+        data.data.forEach(user => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-circle bg-primary text-white mr-2">
+                            ${user.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <strong>${user.username}</strong>
+                            <br><small class="text-muted">ID: ${user.user_id}</small>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge badge-success">${user.total_duration.toFixed(2)} hrs</span></td>
+                <td>${user.start_date || 'N/A'}</td>
+                <td>${user.end_date || 'N/A'}</td>
+                <td><span class="badge badge-info">${user.days_worked} days</span></td>
+                <td><span class="badge badge-info">NA</span></td>
+                <td>
+                    ${user.project_hours && Object.keys(user.project_hours).length > 0 
+                        ? Object.entries(user.project_hours).map(([project, hours]) => 
+                            `<div class="mb-1">
+                                <span class="badge badge-secondary mr-1">${project}</span>
+                                <small class="text-muted">${hours.toFixed(2)}h</small>
+                            </div>`
+                          ).join('')
+                        : '<span class="text-muted">No projects</span>'
+                    }
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // Update summary cards
+    function updateSummaryCards(data) {
+        if (!data.data || data.data.length === 0) {
+            document.getElementById('summaryCards').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('summaryCards').style.display = 'block';
+        
+        const totalUsers = data.total;
+        const totalHours = data.data.reduce((sum, user) => sum + user.total_duration, 0);
+        console.log(totalHours);
+        const avgHoursPerUser = totalUsers > 0 ? (totalHours / totalUsers) : 0;
+        const totalDays = data.data.reduce((sum, user) => sum + user.days_worked, 0);
+
+        document.getElementById('totalUsers').textContent = totalUsers;
+        document.getElementById('totalHours').textContent = totalHours.toFixed(2);
+        document.getElementById('avgHoursPerUser').textContent = avgHoursPerUser.toFixed(2);
+        document.getElementById('totalDays').textContent = totalDays;
+    }
+
+    // Generate pagination
+    function generatePagination(data) {
+        const paginationList = document.getElementById('paginationList');
+        paginationList.innerHTML = '';
+
+        if (data.total_pages <= 1) return;
+
+        // Previous button
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${data.page === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link" href="#" data-page="${data.page - 1}">Previous</a>`;
+        paginationList.appendChild(prevLi);
+
+        // Page numbers
+        for (let i = 1; i <= data.total_pages; i++) {
+            const li = document.createElement('li');
+            li.className = `page-item ${i === data.page ? 'active' : ''}`;
+            li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
+            paginationList.appendChild(li);
+        }
+
+        // Next button
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${data.page === data.total_pages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link" href="#" data-page="${data.page + 1}">Next</a>`;
+        paginationList.appendChild(nextLi);
+
+        // Add click event listeners
+        paginationList.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (e.target.classList.contains('page-link')) {
+                const page = parseInt(e.target.dataset.page);
+                if (page >= 1 && page <= data.total_pages && page !== data.page) {
+                    currentPage = page;
+                    loadClientUserData();
+                }
+            }
+        });
+    }
+
+    // Clear filters
+    function clearFilters() {
+        document.getElementById('userIdFilter').value = '';
+        document.getElementById('projectFilter').value = '';
+        document.getElementById('startDate').value = '';
+        document.getElementById('endDate').value = '';
+        document.getElementById('limitSelect').value = '10';
+    }
+
+    // Show error message
+    function showError(message) {
+        const tbody = document.getElementById('userDataTableBody');
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-danger">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    ${message}
+                </td>
+            </tr>
+        `;
+    }
+});
+</script>
+
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+}
+</style>
+{% endblock %}

@@ -60,3 +60,67 @@ class PaginatedProjectResponse(BaseModel):
     page: int
     total_pages: int
     data: List[ProjectSummary]
+
+# Client Time Summary Models
+class ClientTimeSummary(BaseModel):
+    client_name: str
+    jobcode_id: int
+    total_hours: float
+    client_start_date: Optional[str] = None
+    client_end_date: Optional[str] = None
+    total_users: int
+    total_count: int
+
+    @field_validator("total_hours", mode="before")
+    def round_two_decimals(cls, v):
+        if v is not None:
+            return round(float(v), 2)
+        return v
+
+class PaginatedClientTimeResponse(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    page: int
+    total_pages: int
+    data: List[ClientTimeSummary]
+
+# Dropdown Models
+class ClientOption(BaseModel):
+    client_name: str
+
+class ProjectOption(BaseModel):
+    project_name: str
+
+# Client User Data Models
+class ClientUserData(BaseModel):
+    user_id: int
+    username: str
+    total_hours: float
+    user_start_date: Optional[str] = None
+    user_end_date: Optional[str] = None
+    days_worked: int
+    avg_hours_per_day: float
+    projects: Optional[List[str]] = []
+    project_hours: Optional[dict] = {}  # Dictionary of project_name: hours
+    total_count: int
+
+    @field_validator("total_hours", "avg_hours_per_day", mode="before")
+    def round_two_decimals(cls, v):
+        if v is not None:
+            return round(float(v), 2)
+        return v
+
+    @field_validator("projects", mode="before")
+    def handle_none_projects(cls, v):
+        if v is None:
+            return []
+        return v
+
+class PaginatedClientUserResponse(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    page: int
+    total_pages: int
+    data: List[ClientUserData]
