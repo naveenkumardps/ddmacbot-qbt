@@ -55,7 +55,7 @@ def syncTimesheet(page, count):
 async def syncFiles():
     # 1. Get timesheet details
     files_resp = requests.get(
-        f"{url}/files", headers=headers, params={"start_date": "2020-01-01"}
+        f"{url}/files", headers=headers, params={"start_date": "2025-07-01"}
     )
     data = files_resp.json()
     files = data.get("results", {}).get("files", {})

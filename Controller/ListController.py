@@ -275,3 +275,52 @@ async def get_client_user_data(
     except Exception as e:
         print(f"DEBUG - Unexpected error in get_client_user_data: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching client user data: {str(e)}")
+
+
+@client_route.get("/task-user-list")
+async def get_task_user_list(
+    limit: int = Query(10, ge=1),
+    offset: int = Query(0, ge=0),
+    jobcode_id: int = Query(None, ge=0),
+    user_id: int = Query(None, ge=0)
+):
+    """Get list of projects for dropdown"""
+    try:
+        params = {
+            'p_limit':limit,
+            'p_offset':offset,
+            'p_jobcode_id':jobcode_id,
+            'p_user_id':user_id
+            
+        }
+
+        response = supabase_client.rpc('get_timesheet_entries_task',params).execute()
+        
+       
+        
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching project list: {str(e)}")
+
+
+@client_route.get("/task-estmate-list")
+async def get_task_estmate_list(
+    limit: int = Query(1000, ge=1),
+    offset: int = Query(0, ge=0),
+    jobcode_id: int = Query(None, ge=0),
+    user_id: int = Query(None, ge=0)
+):
+    """Get list of task estimates for dropdown"""
+    try:
+        params = {  
+            'p_limit':limit,
+            'p_offset':offset,
+            'p_jobcode_id':jobcode_id,
+            'p_user_id':user_id
+        }
+
+        response = supabase_client.rpc('get_task_duration_summary',params).execute()
+        
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching task estimate list: {str(e)}")

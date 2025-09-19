@@ -45,6 +45,13 @@ app.add_middleware(AuthMiddleware, excluded_paths=[
     "/api/user-listing-data", 
     "/api/user-summary-data",
     "/api/projects-data",
+    "/api/v1/client-time-summary",
+    "/api/v1/task-user-list",
+    "/api/v1/client-list",
+    "/api/v1/project-list",
+    "/api/v1/client-user-data",
+    "/api/v1/debug-duration-data",
+    "/api/v1/debug-office-data",
     "/static",
     "/docs",
     "/openapi.json",
@@ -75,7 +82,7 @@ async def verify_credentials(api_key: str = Security(api_key_header)):
 @app.middleware("http")
 async def api_key_middleware(request: Request, call_next):
     # Allow docs, redoc, openapi.json, and UI routes without auth
-    if request.url.path in ["/docs", "/redoc", "/openapi.json", "/", "/dashboard", "/login", "/users", "/user-listing", "/user-summary", "/projects", "/timesheets", "/customers", "/tasks", "/client-time-summary"] or request.url.path.startswith("/client-user-details/") or request.url.path.startswith("/api/dashboard-stats") or request.url.path.startswith("/api/users-data") or request.url.path.startswith("/api/user-listing-data") or request.url.path.startswith("/api/user-summary-data") or request.url.path.startswith("/api/projects-data") or request.url.path.startswith("/api/login") or request.url.path.startswith("/api/logout") or request.url.path.startswith("/api/me") or request.url.path.startswith("/api/v1/client-time-summary") or request.url.path.startswith("/api/v1/client-list") or request.url.path.startswith("/api/v1/project-list") or request.url.path.startswith("/api/v1/client-user-data") or request.url.path.startswith("/api/v1/debug-duration-data") or request.url.path.startswith("/api/v1/debug-office-data"):
+    if request.url.path in ["/docs", "/redoc", "/openapi.json", "/", "/dashboard", "/login", "/users", "/user-listing", "/user-summary", "/projects", "/timesheets", "/customers", "/tasks", "/client-time-summary"] or request.url.path.startswith("/client-user-details/") or request.url.path.startswith("/api/dashboard-stats") or request.url.path.startswith("/api/users-data") or request.url.path.startswith("/api/user-listing-data") or request.url.path.startswith("/api/user-summary-data") or request.url.path.startswith("/api/projects-data") or request.url.path.startswith("/api/login") or request.url.path.startswith("/api/logout") or request.url.path.startswith("/api/me") or request.url.path.startswith("/api/v1/client-time-summary") or request.url.path.startswith("/api/v1/client-list") or request.url.path.startswith("/api/v1/project-list") or request.url.path.startswith("/api/v1/client-user-data") or request.url.path.startswith("/api/v1/debug-duration-data") or request.url.path.startswith("/api/v1/debug-office-data")  or request.url.path.startswith("/api/v1/task-user-list")    or request.url.path.startswith("/api/v1/task-estmate-list"):
         return await call_next(request)
 
     # Check headers for other endpoints
