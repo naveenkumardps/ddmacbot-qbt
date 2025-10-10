@@ -140,11 +140,11 @@ def daily_task():
 def start_scheduler():
     scheduler = BackgroundScheduler()
     # Run daily at 5 PM
-    scheduler.add_job(getUser, CronTrigger(hour=16, minute=0))
-    scheduler.add_job(getCustomer, CronTrigger(hour=16, minute=10))
-    scheduler.add_job(getCustomfield, CronTrigger(hour=16, minute=15))
-    scheduler.add_job(getTimesheetlog, CronTrigger(hour=17, minute=0))
-    scheduler.add_job(syncFiles, CronTrigger(hour=17, minute=5))
+    # scheduler.add_job(getUser, CronTrigger(hour=16, minute=0))
+    # scheduler.add_job(getCustomer, CronTrigger(hour=16, minute=10))
+    # scheduler.add_job(getCustomfield, CronTrigger(hour=16, minute=15))
+    scheduler.add_job(getTimesheetlog, CronTrigger(minute="*/15"))
+    # scheduler.add_job(syncFiles, CronTrigger(hour=17, minute=5))
     scheduler.start()
 
 # Your existing API routes

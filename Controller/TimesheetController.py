@@ -4,6 +4,7 @@ from config.config import *
 from config.database import *
 from Models.CustomerModel import CustomerModel
 import time
+from datetime import datetime
 
 route = APIRouter(prefix="/timesheet", tags=["Timesheet"])
 url = QBTBASEURL
@@ -23,10 +24,11 @@ def syncTimesheet(page, count):
         delay_seconds = 2
 
         while True:
+            today_str = datetime.now().strftime("%Y-%m-%d")
             ts_resp = requests.get(
                 f"{url}/timesheets",
                 headers=headers,
-                params={"start_date": "2023-10-1", "page": page},
+                params={"start_date": today_str, "page": page},
             )
             data = ts_resp.json()
 
