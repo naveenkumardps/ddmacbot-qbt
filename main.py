@@ -35,28 +35,28 @@ logging.basicConfig(
 app = FastAPI(title=APPNAME)
 
 # Add authentication middleware
-app.add_middleware(AuthMiddleware, excluded_paths=[
-    "/login",
-    "/api/login", 
-    "/api/logout",
-    "/api/me",
-    "/api/dashboard-stats",
-    "/api/users-data",
-    "/api/user-listing-data", 
-    "/api/user-summary-data",
-    "/api/projects-data",
-    "/api/v1/client-time-summary",
-    "/api/v1/task-user-list",
-    "/api/v1/client-list",
-    "/api/v1/project-list",
-    "/api/v1/client-user-data",
-    "/api/v1/debug-duration-data",
-    "/api/v1/debug-office-data",
-    "/static",
-    "/docs",
-    "/openapi.json",
-    "/favicon.ico"
-])
+# app.add_middleware(AuthMiddleware, excluded_paths=[
+#     "/login",
+#     "/api/login", 
+#     "/api/logout",
+#     "/api/me",
+#     "/api/dashboard-stats",
+#     "/api/users-data",
+#     "/api/user-listing-data", 
+#     "/api/user-summary-data",
+#     "/api/projects-data",
+#     "/api/v1/client-time-summary",
+#     "/api/v1/task-user-list",
+#     "/api/v1/client-list",
+#     "/api/v1/project-list",
+#     "/api/v1/client-user-data",
+#     "/api/v1/debug-duration-data",
+#     "/api/v1/debug-office-data",
+#     "/static",
+#     "/docs",
+#     "/openapi.json",
+#     "/favicon.ico"
+# ])
 
 # Mount static files only if directory exists
 if os.path.exists("static"):

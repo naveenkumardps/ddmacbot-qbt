@@ -26,7 +26,7 @@ def syncTimesheet(page, count):
             ts_resp = requests.get(
                 f"{url}/timesheets",
                 headers=headers,
-                params={"start_date": "2020-10-1", "page": page},
+                params={"start_date": "2023-10-1", "page": page},
             )
             data = ts_resp.json()
 
