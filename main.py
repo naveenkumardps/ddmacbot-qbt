@@ -32,7 +32,7 @@ logging.basicConfig(
     ]
 )
 
-app = FastAPI(title=APPNAME,root_path="/api")
+app = FastAPI(title=APPNAME)
 
 # Add authentication middleware
 # app.add_middleware(AuthMiddleware, excluded_paths=[
