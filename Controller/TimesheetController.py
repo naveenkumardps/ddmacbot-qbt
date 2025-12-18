@@ -28,7 +28,7 @@ def syncTimesheet(page, count):
             ts_resp = requests.get(
                 f"{url}/timesheets",
                 headers=headers,
-                params={"start_date": today_str, "page": page},
+                params={"start_date": '2025-12-16', "page": page},
             )
             data = ts_resp.json()
 
@@ -45,7 +45,7 @@ def syncTimesheet(page, count):
             time.sleep(delay_seconds)
 
         elapsed = time.time() - start_time
-        return {"status": "success", "count": count, "elapsed_seconds": elapsed}
+        return {"status": "success", "count": count, "elapsed_seconds": elapsed, 'today': today_str}
 
     except Exception as e:
         elapsed = time.time() - start_time
