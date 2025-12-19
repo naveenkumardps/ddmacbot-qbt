@@ -24,11 +24,11 @@ def syncTimesheet(page, count):
         delay_seconds = 2
 
         while True:
-            today_str = datetime.now().strftime("%Y-%m-%d")
+            today_str = (datetime.now() - __import__('datetime').timedelta(days=2)).strftime("%Y-%m-%d")
             ts_resp = requests.get(
                 f"{url}/timesheets",
                 headers=headers,
-                params={"start_date": '2025-12-16', "page": page},
+                params={"start_date": today_str, "page": page},
             )
             data = ts_resp.json()
 
